@@ -1,2 +1,88 @@
-# udacity-airflow-project-ajayjain
-Udacity airflow project Ajay Jain
+# Project: Data Pipelines with Apache Airflow
+### Ajay Jain
+
+## Introduction
+
+<p>A music streaming company, Sparkify, decided that to introduce more automation and monitoring to their data warehouse ETL pipelines 
+  and come to the conclusion that the best tool to achieve this is Apache Airflow.</p>
+<p>The goal is to create a data pipeline that is dynamic and built from reusable tasks, can be monitored, and allow easy backfills. </p>
+<p>Data resides in S3 and is processed in Amazon Redshift. </p>
+
+## Location of Data
+
+**s3://udacity-dend/song_data/**<br>
+**s3://udacity-dend/log_data/**
+
+## Data Modeling wih Star Schema
+
+![song_play_analysis_with_star_schema!](./images/song_play_analysis_with_star_schema.png "song_play_analysis_with_star_schema")
+
+## Configuring the DAG
+
+In the DAG, add default parameters according to these guidelines
+
+1. The DAG does not have dependencies on past runs
+2. On failure, the task are retried 3 times
+3. Retries happen every 2 minutes
+4. Catchup is turned off
+5. Do not email on retry
+
+
+![DAG!](./image/sparkify_dag.PNG "sparkify-dag")
+
+**Configure the task dependencies**
+```
+start_operator  \
+    >> create_trips_table \
+    >> [stage_events_to_redshift, stage_songs_to_redshift] \
+    >> load_songplays_table \
+    >> [ load_songs_table, load_artists_table, load_time_table, load_users_table] \
+    >> run_quality_checks \
+    >> end_operator
+```
+
+## Project 
+- **spakify_dag.py** includes all the imports, tasks and task dependencies <br>
+- **drop_tables.py** to drop the tables, if required <br>
+- **operators** folder has four  operators for  staging, transformation and run the quality check <br>
+- **helper** class for the SQL statements
+
+## Building the operators
+
+### Stage Operator
+<p>The stage operator is to load any JSON formatted files from S3 to Amazon Redshift.   </p>
+
+<p>The parameters should be used to distinguish between JSON file. Another important requirement of the stage operator is containing a templated field that allows
+  it to load timestamped files from S3 based on the execution time and run backfills.</p>
+
+### Fact and Dimension Operators
+<p>With dimension and fact operators, you can utilize the provided SQL helper class to run data transformations.
+  Most of the logic is within the SQL transformations and the operator is expected to take as input a SQL statement and target database on 
+  which to run the query against.</p>
+
+<p>Dimension loads are often done with the truncate-insert pattern where the target table is emptied before the load.
+  Thus, you could also have a parameter that allows switching between insert modes when loading dimensions. Fact tables are usually so massive that they should only allow append type functionality.</p>
+
+### Data Quality Operator
+<p>The final operator to create is the data quality operator, which is used to run checks on the data itself. The operator's main functionality is to receive one or more SQL based test cases along with the expected results and execute the tests. For each the test, the test result and expected result needs to be checked and if there is no match, the operator should raise an exception and the task should retry and fail eventually.</p>
+
+## Airflow Configuration and Cluster details
+
+ AWS credentials and connection to Redshift are configured in the Airflow portal
+
+1. AWS crednetials
+(./images/awsConnection.png "admin connections")
+
+2. Redshit connection
+![create connections!](./images/redshiftConnection.png "create connections")
+
+
+![cluster-details!](./images/cluster-details.png "cluster-details")
+
+![connection-redshift!](./image/connection-redshift.png "connection-redshift")
+
+
+
+
+
+
